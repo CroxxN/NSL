@@ -13,7 +13,7 @@ import tensorflow as tf
 class KeyPointClassifier(object):
     def __init__(
         self,
-        model_path='keypoint_classifier.tflite',
+        model_path='keypoint_classifier.hdf5',
         num_threads=1,
     ):
         self.interpreter = tf.lite.Interpreter(model_path=model_path,
@@ -84,6 +84,8 @@ def main():
 
     use_brect = True
 
+    pygame.init()
+    pygame.mixer.init()
     # Camera preparation ###############################################################
     cap=cv.VideoCapture(cap_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
@@ -163,10 +165,13 @@ def main():
         debug_image = draw_info(debug_image, mode)
 
         # Screen reflection #############################################################
+        play_audio(hand_sign_id) # play detected audio
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
     cv.destroyAllWindows()
+    pygame.mixer.quit()
+    pygame.quit()
 
 
 def calc_bounding_rect(image, landmarks):
@@ -471,6 +476,20 @@ def draw_info(image, mode):
                    cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
                    cv.LINE_AA)
     return image
+
+def play_audio(index):
+    file = f"{index}.mp3"
+
+    try:
+            # Load and play the audio file
+        pygame.mixer.music.load(filename)
+        pygame.mixer.music.play()
+
+        # Wait until the music has finished playing
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(10)
+    except pygame.error as e:
+        print(f"Error playing audio: {e}")
 
 
 if __name__ == '__main__':
