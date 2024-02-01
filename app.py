@@ -7,13 +7,14 @@ import itertools
 
 import cv2 as cv
 import numpy as np
+import pygame
 import mediapipe as mp
 import tensorflow as tf
 
 class KeyPointClassifier(object):
     def __init__(
         self,
-        model_path='keypoint_classifier.hdf5',
+        model_path='keypoint_classifier.tflite',
         num_threads=1,
     ):
         self.interpreter = tf.lite.Interpreter(model_path=model_path,
@@ -81,7 +82,7 @@ def main():
     use_static_image_mode = args.use_static_image_mode
     min_detection_confidence = args.min_detection_confidence
     min_tracking_confidence = args.min_tracking_confidence
-
+    last_track = 0
     use_brect = True
 
     pygame.init()
@@ -136,6 +137,7 @@ def main():
 
         #  ####################################################################
         #checking whether the hand is detected 
+        hand_sign_id = None
         if results.multi_hand_landmarks is not None:
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks,
                                                   results.multi_handedness):
@@ -149,8 +151,9 @@ def main():
 
                 # Hand sign classification from the normalized coordinates
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
+                hand_sign_id += 1
                 
-
+                
                
                 # Drawing part
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
@@ -159,13 +162,16 @@ def main():
                     debug_image,
                     brect,
                     handedness,
-                    keypoint_classifier_labels[hand_sign_id],
+                    keypoint_classifier_labels[hand_sign_id-1],
                     )
         
         debug_image = draw_info(debug_image, mode)
 
         # Screen reflection #############################################################
-        play_audio(hand_sign_id) # play detected audio
+        if hand_sign_id != None and last_track != hand_sign_id:
+            last_track = hand_sign_id
+            if hand_sign_id != 38:
+                play_audio(hand_sign_id)
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
@@ -478,11 +484,11 @@ def draw_info(image, mode):
     return image
 
 def play_audio(index):
-    file = f"{index}.mp3"
+    file = f"chinop4/{index}.mp3"
 
     try:
             # Load and play the audio file
-        pygame.mixer.music.load(filename)
+        pygame.mixer.music.load(file)
         pygame.mixer.music.play()
 
         # Wait until the music has finished playing
